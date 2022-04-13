@@ -1,0 +1,6 @@
+__pycache__
+.coverage
+.eggs/
+dist/
+build/
+paramsurvey_multimpi.egg-info/
