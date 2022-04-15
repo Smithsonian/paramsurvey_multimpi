@@ -1,4 +1,4 @@
-.PHONY: unit unit_coverage clean_coverage test
+.PHONY: unit unit_coverage integration integration_coverage clean_coverage test
 
 unit:
 	PYTHONPATH=. pytest -v -v tests/unit
@@ -6,12 +6,18 @@ unit:
 unit_coverage:
 	PYTHONPATH=. pytest --cov-append --cov-branch --cov paramsurvey_multimpi -v -v tests/unit
 
+integration:
+	PYTHONPATH=. pytest -v -v tests/integration
+
+integration_coverage:
+	PYTHONPATH=. pytest --cov-append --cov-branch --cov paramsurvey_multimpi -v -v tests/integration
+
 clean_coverage:
 	rm -f .coverage
 
-test: unit
+test: unit integration
 
-test_coverage: clean_coverage unit_coverage 
+test_coverage: clean_coverage unit_coverage integration_coverage
 
 distclean:
 	rm -rf dist/
