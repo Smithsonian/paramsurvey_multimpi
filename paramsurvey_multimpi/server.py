@@ -4,6 +4,8 @@ from collections import defaultdict
 import multiprocessing
 import os
 import sys
+import ctypes
+import ctypes.util
 
 from aiohttp import web
 import aiohttp_rpc
@@ -11,12 +13,21 @@ import aiohttp_rpc
 import psutil
 
 exiting = False
+# XXX pdeathsig -- set exiting -- see existing SIGHUP code
+# XXX make exiting actually exit this process
 
 leaders = defaultdict(dict)
 followers = defaultdict(dict)
 cache_lifetime = 30  # should be several times as long as the follower checkin time
 
 jobnumber = 0  # used to disambiguate states
+
+
+def set_pdeathsig():
+    libc = ctypes.CDLL(ctypes.util.find_library('c'), use_errno=True)
+    PR_SET_PDEATHSIG = 1
+    if libc.prctl(PR_SET_PDEATHSIG, signal.SIGKILL) != 0:
+        raise OSError(ctypes.get_errno(), 'PR_SET_PDEATHSIG')
 
 
 def clear():
@@ -52,6 +63,7 @@ def cache_timeout():
         # XXX maybe do something if waiting, scheduled, but not running?
         # we expect running leaders to never check in
         del leaders[k]
+
 
 def cache_clean_exiting():
     nuke = set()
@@ -144,6 +156,7 @@ def key(ip, pid):
 def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
     if exiting:
         #print('multimpi_server: saw leader checkin after I was HUPped', file=sys.stderr)
+        # XXX if I'm in the leaders table, remove me
         return {'followers': None, 'state': 'exiting'}
 
     lkey = key(ip, pid)
@@ -246,6 +259,7 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
 def follower_checkin(ip, cores, pid, remotestate, fseq_new):
     if exiting:
         #print('multimpi_server: saw follower checkin after I was HUPped', file=sys.stderr)
+        # XXX remove me from the followers table?
         return {'state': 'exiting'}
 
     k = key(ip, pid)
@@ -343,6 +357,7 @@ def mysignal(signum, frame):
 
 if __name__ == '__main__':
     signal.signal(signal.SIGHUP, mysignal)
+    set_pdeathsig()
 
     aiohttp_rpc.rpc_server.add_methods([
         leader_checkin,

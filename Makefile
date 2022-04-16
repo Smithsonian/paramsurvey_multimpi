@@ -1,16 +1,20 @@
 .PHONY: unit unit_coverage integration integration_coverage clean_coverage test
 
+COV=--cov-append --cov-branch --cov paramsurvey_multimpi
+
 unit:
 	PYTHONPATH=. pytest -v -v tests/unit
 
 unit_coverage:
-	PYTHONPATH=. pytest --cov-append --cov-branch --cov paramsurvey_multimpi -v -v tests/unit
+	PYTHONPATH=. pytest ${COV} -v -v tests/unit
 
 integration:
 	PYTHONPATH=. pytest -v -v tests/integration
 
 integration_coverage:
-	PYTHONPATH=. pytest --cov-append --cov-branch --cov paramsurvey_multimpi -v -v tests/integration
+	PYTHONPATH=. pytest ${COV} -v -v tests/integration
+	PYTHONPATH=. TEST_GENERIC=multiprocessing_test pytest ${COV} -v -v tests/integration/test-generic.py
+	#PYTHONPATH=. TEST_GENERIC=multiprocessing_test pytest ${COV} -v -v tests/integration/test-generic.py
 
 clean_coverage:
 	rm -f .coverage
