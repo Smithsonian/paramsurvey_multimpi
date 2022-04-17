@@ -1,6 +1,8 @@
 import subprocess
 import os
 import os.path
+from io import StringIO
+import sys
 
 import pytest
 
@@ -53,7 +55,18 @@ def test_generic():
     tests = tests[name]
 
     client.start_multimpi_server()
-    paramsurvey.init(backend=tests['backend'], ncores=tests.get('ncores'))
+
+    pslogger_fd = StringIO()
+    kwargs = {
+        'backend': tests['backend'],
+        'pslogger_fd': pslogger_fd,
+    }
+    if 'ncores' in tests:
+        kwargs['ncores'] = tests.get('ncores')
+    if tests['backend'] == 'ray':
+        kwargs['ray'] = {'address': 'auto'}
+
+    paramsurvey.init(**kwargs)
 
     mydir = os.path.dirname(paramsurvey_multimpi.__file__) + '/../tests/integration'
 
@@ -64,7 +77,6 @@ def test_generic():
             r = tests.get(name)
             print('r2', r)
         return r
-
 
     def inflate(t, tests):
         # apply defaults
@@ -126,3 +138,6 @@ def test_generic():
                 continue
             print(repr(r))
             assert r.cli.returncode == returncode
+
+    print(pslogger_fd.getvalue(), file=sys.stderr)
+    #assert False

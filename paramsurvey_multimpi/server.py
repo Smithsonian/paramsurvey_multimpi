@@ -372,4 +372,6 @@ if __name__ == '__main__':
 
     host, port = sys.argv[1:3]
 
+    print('server: hello from the server, I am bound to host {} port {}'.format(host, port), file=sys.stderr)
+    sys.stderr.flush()
     web.run_app(app, host=host, port=port)
