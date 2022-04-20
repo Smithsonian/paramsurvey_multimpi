@@ -14,11 +14,17 @@ def test_environment():
 
     assert os.path.isfile('hello.c'), 'hello.c should be in the test directory'
 
-    proc = subprocess.run(['mpicc', 'hello.c'], capture_output=True, encoding='utf-8')
+    proc = subprocess.run(['mpicc', 'hello.c'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          encoding='utf-8')
     assert proc.returncode == 0, 'mpicc return code should be zero'
     assert proc.stderr == '', 'stderr should be empty'
 
-    proc = subprocess.run(['mpirun', '--oversubscribe', '-n', '4', './a.out'], capture_output=True, encoding='utf-8')
+    proc = subprocess.run(['mpirun', '--oversubscribe', '-n', '4', './a.out'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          encoding='utf-8')
     assert proc.returncode == 0, 'mpirun return code should be zero'
     assert proc.stderr == '', 'stderr should be empty'
     assert len(proc.stdout.splitlines()) == 4, 'stdout should be 4 lines long'
