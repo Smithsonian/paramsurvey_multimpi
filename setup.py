@@ -11,7 +11,7 @@ packages = [
 test_requirements = ['pytest', 'coverage', 'pytest-cov', 'pytest-sugar', 'coveralls', 'pyfakefs', 'requests_mock', 'pylint', 'flake8']
 
 requires = [
-    'paramsurvey',
+    'paramsurvey>0.4.16',
     'aiohttp',
     'aiohttp-rpc',
     'requests',
