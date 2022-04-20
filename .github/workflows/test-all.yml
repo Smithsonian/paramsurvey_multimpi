@@ -31,7 +31,7 @@ jobs:
           #  ONLY_BUILTINS: 1  # no ray on macos py38, but there is for py39
           #  needs openmpi
 
-    environment: paramsurvey-test
+    environment: paramsurvey-multimpi-test
 
     steps:
 
