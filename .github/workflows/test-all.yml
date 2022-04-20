@@ -26,9 +26,10 @@ jobs:
           - python-version: '3.10'
             os: ubuntu-latest
             ONLY_BUILTINS: 1  # no ray wheel yet on 3.10
-          - python-version: 3.9
-            os: macos-latest
-            ONLY_BUILTINS: 1  # no ray on macos py38, but there is for py39
+          #- python-version: 3.9
+          #  os: macos-latest
+          #  ONLY_BUILTINS: 1  # no ray on macos py38, but there is for py39
+          #  needs openmpi
 
     environment: paramsurvey-test
 
@@ -40,6 +41,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
+
+    -  name: 'Install OS packages'
+      run: sudo apt-get install -y openmpi-common openmpi-bin
 
     - name: 'Install dependencies'
       run: |
