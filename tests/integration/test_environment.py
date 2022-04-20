@@ -18,7 +18,7 @@ def test_environment():
     assert proc.returncode == 0, 'mpicc return code should be zero'
     assert proc.stderr == '', 'stderr should be empty'
 
-    proc = subprocess.run(['mpirun', '-n', '4', './a.out'], capture_output=True, encoding='utf-8')
+    proc = subprocess.run(['mpirun', '--oversubscribe', '-n', '4', './a.out'], capture_output=True, encoding='utf-8')
     assert proc.returncode == 0, 'mpirun return code should be zero'
     assert proc.stderr == '', 'stderr should be empty'
     assert len(proc.stdout.splitlines()) == 4, 'stdout should be 4 lines long'

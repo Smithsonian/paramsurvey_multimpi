@@ -27,6 +27,9 @@ test: unit integration
 
 test_coverage: clean_coverage unit_coverage integration_coverage
 
+check_action:
+	python -c 'import yaml, sys; print(yaml.safe_load(sys.stdin))' < .github/workflows/test-all.yml
+
 distclean:
 	rm -rf dist/
 

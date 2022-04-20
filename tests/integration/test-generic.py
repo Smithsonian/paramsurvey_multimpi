@@ -100,7 +100,7 @@ def test_generic():
         exe = fetch('exe', t, tests)
 
         # XXX can run_args be a string or list? if string, split with shlex.split()
-        psets = [{'kind': 'leader', 'ncores': ncores, 'run_args': 'mpirun -np {} {}'.format(wanted, exe), 'wanted': wanted}]
+        psets = [{'kind': 'leader', 'ncores': ncores, 'run_args': 'mpirun --oversubscribe -np {} {}'.format(wanted, exe), 'wanted': wanted}]
 
         followers = nodes - 1
         for _ in range(followers):
