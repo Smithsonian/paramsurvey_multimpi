@@ -12,7 +12,7 @@ import requests
 import paramsurvey_multimpi
 
 
-url = "http://localhost:8889/jsonrpc"
+url = None
 timeout = (4, 1)  # connect, read
 sigint_count = 0
 leader_exceptions = []
@@ -211,6 +211,12 @@ def follower(pset, system_kwargs, user_kwargs):
 
 
 def multimpi_worker(pset, system_kwargs, user_kwargs):
+    if 'multimpi_server_url' in user_kwargs:
+        global url
+        url = user_kwargs['multimpi_server_url']
+    else:
+        raise ValueError('missing multimpi_server_url')
+
     if pset['kind'] == 'leader':
         return leader(pset, system_kwargs, user_kwargs)
 
@@ -233,12 +239,17 @@ def mysignal(helper_server_proc, signum, frame):
             print('driver: additional sigint ignored', file=sys.stderr)
 
 
-def start_multimpi_server(hostport=':8889'):
+def start_multimpi_server(hostport=':8889', user_kwargs={}):
+    if ':' not in hostport:
+        hostport = hostport + ':8889'
     host, port = hostport.split(':', maxsplit=1)
     if not host:
-        host = socket.gethostname()
+        host = socket.getfqdn()
+        if '.' not in host:
+            raise ValueError('did not find a valid FQDN, consider passing a hostname in hostport=')
     global url
     url = 'http://{}:{}/jsonrpc'.format(host, port)
+    user_kwargs['multimpi_server_url'] = url
 
     global helper_server_proc
     daemon = paramsurvey_multimpi.__file__.replace('/__init__.py', '/server.py')
@@ -263,6 +274,8 @@ def start_multimpi_server(hostport=':8889'):
 
     mysignal_ = functools.partial(mysignal, helper_server_proc)
     signal.signal(signal.SIGINT, mysignal_)
+
+    return user_kwargs
 
 
 def tear_down_multimpi_server(helper_server_proc):

@@ -54,7 +54,7 @@ def test_generic():
         raise ValueError('unknown test name {}, options are: {}'.format(name, list(tests.keys())))
     tests = tests[name]
 
-    client.start_multimpi_server()
+    user_kwargs = client.start_multimpi_server(hostport='localhost:8889')
 
     pslogger_fd = StringIO()
     kwargs = {
@@ -63,8 +63,6 @@ def test_generic():
     }
     if 'ncores' in tests:
         kwargs['ncores'] = tests.get('ncores')
-    if tests['backend'] == 'ray':
-        kwargs['ray'] = {'address': 'auto'}
 
     paramsurvey.init(**kwargs)
 
@@ -81,10 +79,10 @@ def test_generic():
     def inflate(t, tests):
         # apply defaults
         # what's the other way to do this? capture_output but where
-        user_kwargs = {'run_kwargs': {
+        user_kwargs.update({'run_kwargs': {
             'stdout': subprocess.PIPE, 'encoding': 'utf-8',
             'stderr': subprocess.PIPE, 'encoding': 'utf-8',
-        }}
+        }})
 
         resources = fetch('resources', t, tests)
         nodes, ncores = resources.split('x', 1)
@@ -117,7 +115,6 @@ def test_generic():
 
         return psets, user_kwargs
 
-
     for t in tests['tests']:
         exception = fetch('exception', t, tests)
 
@@ -128,6 +125,9 @@ def test_generic():
 
         psets, user_kwargs = inflate(t, tests)
         results = paramsurvey.map(client.multimpi_worker, psets, user_kwargs=user_kwargs, chdir=mydir)
+        assert results.progress.total == len(psets)
+        assert results.progress.failures == 0
+        assert results.progress.exceptions == 0
 
         # XXX split leaders and followers
         # XXX count the followers, maybe some generic tests?
@@ -140,4 +140,3 @@ def test_generic():
             assert r.cli.returncode == returncode
 
     print(pslogger_fd.getvalue(), file=sys.stderr)
-    #assert False

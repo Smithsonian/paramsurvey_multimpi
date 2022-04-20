@@ -13,13 +13,12 @@ integration:
 	# hint: PYTEST_STDERR_VISIBLE=-s
 	PYTHONPATH=. pytest -v -v tests/integration
 	PYTHONPATH=. TEST_GENERIC=multiprocessing_test pytest -v -v tests/integration/test-generic.py
-	PYTEST_STDERR_VISIBLE=-s PYTHONPATH=.:tests/integration TEST_GENERIC=ray_test pytest -v -v tests/integration/test-generic.py
+	PYTHONPATH=.:tests/integration TEST_GENERIC=ray_test bash tests/integration/test-ray.sh -v -v tests/integration/test-generic.py
 
 integration_coverage:
 	PYTHONPATH=. pytest ${COV} -v -v tests/integration
 	PYTHONPATH=. TEST_GENERIC=multiprocessing_test pytest ${COV} -v -v tests/integration/test-generic.py
-	# not yet working
-	#PYTHONPATH=.:tests/integration TEST_GENERIC=ray_test pytest ${COV} -v -v tests/integration/test-generic.py
+	PYTHONPATH=.:tests/integration TEST_GENERIC=ray_test bash tests/integration/test-ray.sh ${COV} -v -v tests/integration/test-generic.py
 
 clean_coverage:
 	rm -f .coverage
