@@ -1,6 +1,6 @@
 name: test-all
 
-on: 
+on:
   push:
     branches:
     - main
@@ -42,8 +42,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: x64
 
-    -  name: 'Install OS packages'
-      run: sudo apt-get install -y openmpi-common openmpi-bin
+    - name: 'Install OS packages'
+      run: |
+        sudo apt-get install -y openmpi-common openmpi-bin
 
     - name: 'Install dependencies'
       run: |
