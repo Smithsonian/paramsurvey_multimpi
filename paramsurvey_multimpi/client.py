@@ -173,9 +173,16 @@ def leader(pset, system_kwargs, user_kwargs):
             #print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
             #os.system('ps')
             if status is not None:
-                print('driver: leader {} observes normal exit'.format(os.getpid()))  # XXX
                 state = 'exiting'
-                completed = finish_mpi(mpi_proc)  # should complete immediately
+
+                print('driver: leader {} observes normal mpirun exit, status {}'.format(os.getpid(), status), file=sys.stderr)
+                try:
+                    completed = finish_mpi(mpi_proc)  # should complete immediately
+                except ValueError as e:
+                    # ValueError("Invalid file object: <_io.TextIOWrapper name=6 encoding='utf-8'>",)
+                    if 'Invalid file object' not in e:
+                        raise
+
                 for _ in range(100):
                     ret = leader_checkin(ncores, wanted, pubkey, state, lseq)
                     #print('driver: leader {} checkin post-normal exit returned'.format(os.getpid()), ret)
