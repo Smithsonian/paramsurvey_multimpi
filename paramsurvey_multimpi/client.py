@@ -173,7 +173,7 @@ def leader(pset, system_kwargs, user_kwargs):
             #print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
             #os.system('ps')
             if status is not None:
-                #print('driver: leader {} observes normal exit'.format(os.getpid()))
+                print('driver: leader {} observes normal exit'.format(os.getpid()))  # XXX
                 state = 'exiting'
                 completed = finish_mpi(mpi_proc)  # should complete immediately
                 for _ in range(100):
