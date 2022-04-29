@@ -179,10 +179,13 @@ def leader(pset, system_kwargs, user_kwargs):
                     completed = finish_mpi(mpi_proc)  # should complete immediately
                 except ValueError as e:
                     # ValueError("Invalid file object: <_io.TextIOWrapper name=6 encoding='utf-8'>",)
+                    # https://github.com/python/cpython/issues/79363 -- claims mpirun is closing stdout or stderr a while before exiting?!
+                    # fix backported to 3.7 -- I only see it in 3.6
                     print('driver: leader {} observes normal mpirun exit, status {}'.format(os.getpid(), status), file=sys.stderr)
                     sys.stderr.flush()
                     if 'Invalid file object' not in str(e):
                         raise
+                    completed = subprocess.CompletedProcess(args=None, returncode=status, stdout='', stderr='')
 
                 for _ in range(100):
                     ret = leader_checkin(ncores, wanted, pubkey, state, lseq)
