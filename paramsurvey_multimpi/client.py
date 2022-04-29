@@ -30,6 +30,10 @@ def get_pubkey():
 
 
 def deploy_pubkey(pubkey):
+    if pubkey == '':
+        # this happens in the CI
+        return
+
     keyfile = os.path.expanduser('~/.ssh/authorized_keys')
     if os.path.exists(keyfile):
         with open(keyfile) as f:
@@ -37,7 +41,11 @@ def deploy_pubkey(pubkey):
         if pubkey in existing:
             return
 
-    with open(keyfile, 'a') as f:  # XXX will fail if .ssh/ does not exist
+    keydir = os.path.dirname(keyfile)
+    if not os.path.isdir(keydir):
+        raise FileNotFoundError('~/.ssh does not exist')
+
+    with open(keyfile, 'a') as f:
         f.write(pubkey)
     os.chmod(keyfile, 0o600)
 
