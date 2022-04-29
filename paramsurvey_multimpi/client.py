@@ -21,7 +21,11 @@ helper_server_proc = None
 
 
 def get_pubkey():
-    with open(os.path.expanduser('~/.ssh/id_rsa.pub')) as f:
+    pub = os.path.expanduser('~/.ssh/id_rsa.pub')
+    if not os.path.isfile(pub):
+        print('No public key found (.ssh/id_rsa.pub), assuming empty is ok', file=sys.stderr)
+        return ''
+    with open(pub) as f:
         return f.read()
 
 
@@ -33,7 +37,7 @@ def deploy_pubkey(pubkey):
         if pubkey in existing:
             return
 
-    with open(keyfile, 'a') as f:
+    with open(keyfile, 'a') as f:  # XXX will fail if .ssh/ does not exist
         f.write(pubkey)
     os.chmod(keyfile, 0o600)
 
