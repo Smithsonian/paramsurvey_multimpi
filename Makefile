@@ -1,4 +1,4 @@
-.PHONY: unit unit_coverage integration integration_coverage clean_coverage test
+.PHONY: unit unit_coverage integration integration_coverage clean_coverage test test_coverage check_action distclean dist
 
 COV=--cov-append --cov-branch --cov paramsurvey_multimpi
 
@@ -28,7 +28,7 @@ test: unit integration
 test_coverage: clean_coverage unit_coverage integration_coverage
 
 check_action:
-	python -c 'import yaml, sys; print(yaml.safe_load(sys.stdin))' < .github/workflows/test-all.yml
+	python -c 'import yaml, sys; print(yaml.safe_load(sys.stdin))' < .github/workflows/test-all.yml > /dev/null
 
 distclean:
 	rm -rf dist/

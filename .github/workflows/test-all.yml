@@ -16,20 +16,22 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
+        EXTRA: [false]  # used to force includes to get included
         include:
           - python-version: 3.6
             os: ubuntu-latest
             # make sure that the most verbose level is not crashy
-            VERBOSE: verbose  # does work
+            VERBOSE: verbose
             PARAMSURVEY_VERBOSE: 3
             PYTEST_STDERR_VISIBLE: -s
+            EXTRA: true
           - python-version: '3.10'
             os: ubuntu-latest
             ONLY_BUILTINS: 1  # no ray wheel yet on 3.10
           #- python-version: 3.9
           #  os: macos-latest
           #  ONLY_BUILTINS: 1  # no ray on macos py38, but there is for py39
-          #  needs openmpi
+          #  XXX needs openmpi
 
     environment: paramsurvey-multimpi-test
 
