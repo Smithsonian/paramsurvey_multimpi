@@ -6,12 +6,13 @@ if [ ! -z "$ONLY_BUILTINS" ]; then
     exit 0
 fi
 
-    PORT=6379
+PORT=6379
 REDIS_PASSWORD=thehfhghedhdjfhgfhdhdhdf
 echo $(hostname):$PORT $REDIS_PASSWORD > ~/.ray-test-72363726-details
 
 GIGABYTE=1000000000  # close enough
 
+ray disable-usage-stats >/dev/null 2>&1 || /bin/true
 ray stop  # in case there's an a leftover ray
 ray start --head --port=$PORT --redis-password=$REDIS_PASSWORD --memory $GIGABYTE --object-store-memory $GIGABYTE --redis-max-memory $GIGABYTE $RAY_START_EXTRAS --num-cpus 4
 
