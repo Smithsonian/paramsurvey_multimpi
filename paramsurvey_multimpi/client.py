@@ -9,6 +9,7 @@ import functools
 import tempfile
 from collections import defaultdict
 import shutil
+import shlex
 
 import requests
 
@@ -231,14 +232,34 @@ def do_google_mount(bucket, directory):
 
 
 def leader_start_mpi(pset, ret, wanted, user_kwargs):
-    # XXX generate special difx hostfile
-    # ret['followers'] is a list of fkeys and core counts
+    if user_kwargs['mpi'] == 'openmpi':
+        machinefile = machinefile_openmpi(pset, ret, wanted, user_kwargs)
+    elif user_kwargs['mpi'] == 'mpich':
+        machinefile = machinefile_mpich(pset, ret, wanted, user_kwargs)
+    else:
+        raise ValueError('unknown mpi implementation: '+user_kwargs['mpi'])
 
-    cmd = pset['run_args'].format(int(wanted)).split()
-    #print('leader {} about to run'.format(os.getpid()), cmd)
+    if machinefile:
+        # empty machinefile means the above code already wrote out the machinefile
+        mf = tempfile.NamedTemporaryFile(prefix='machinefile_', delete=False, mode='w')
+        mf.write(machinefile)
+        mf.close()
+        mfname = mf.name
+    else:
+        mfname = None
+
+    if 'mount_google_bucket' in user_kwargs:
+        # this mount needs to be done on datastream nodes (or just all of them)
+        # so far this is just the leader
+        # so far this doesn't do an unmount
+        # to mount on non-leader nodes paramsurvey needs a tweak
+        do_google_mount(*user_kwargs['mount_google_bucket'])
+
+    cmd = pset['run_args'].replace('%MACHINEFILE%', mfname)
+    cmd = shlex.split(cmd)
+
     run_kwargs = pset.get('run_kwargs') or user_kwargs.get('run_kwargs') or {}
     mpi_proc = run_mpi(cmd, **run_kwargs)
-    #print('leader just ran MPI and mpi_proc is', mpi_proc)
     return mpi_proc
 
 

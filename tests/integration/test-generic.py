@@ -55,6 +55,7 @@ def test_generic():
     tests = tests[name]
 
     user_kwargs = client.start_multimpi_server(hostport='localhost:8889')
+    user_kwargs['mpi'] = 'openmpi'
 
     pslogger_fd = StringIO()
     kwargs = {
@@ -99,8 +100,9 @@ def test_generic():
 
         exe = fetch('exe', t, tests)
 
-        # XXX can run_args be a string or list? if string, split with shlex.split()
-        psets = [{'kind': 'leader', 'ncores': ncores, 'run_args': 'mpirun --oversubscribe -np {} {}'.format(wanted, exe), 'wanted': wanted}]
+        run_args = 'mpirun --machinefile %MACHINEFILE% --oversubscribe -np {} {}'.format(wanted, exe)
+
+        psets = [{'kind': 'leader', 'ncores': ncores, 'run_args': run_args, 'wanted': wanted}]
 
         followers = nodes - 1
         for _ in range(followers):
