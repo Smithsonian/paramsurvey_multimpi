@@ -37,7 +37,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Greg Lindahl and others',
     author_email='lindahl@pbm.com',
-    url='https://github.com/Smithsonian/cloud-corr-mri',
+    url='https://github.com/Smithsonian/paramsurvey_multimpi',
     packages=packages,
     python_requires=">=3.6.*",
     extras_require=extras_require,
