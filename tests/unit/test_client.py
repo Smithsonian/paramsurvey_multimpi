@@ -51,6 +51,11 @@ def test_jsonrpc_retries():
         assert ret['result'] is None
 
 
+def test_unkey():
+    assert client.unkey('foo_1')[0] == 'foo'
+    assert client.unkey('foo_bar_1')[0] == 'foo_bar'
+
+
 def test_unique_resources():
     me = socket.gethostname()
     ret = {'lcores': 3,

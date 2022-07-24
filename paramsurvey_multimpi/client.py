@@ -112,11 +112,15 @@ def hello_world():
     return 'pass'
 
 
+def unkey(key):
+    return key.rsplit('_', 1)
+
+
 def unique_resources(ret):
     sums = defaultdict(int)
     sums[socket.gethostname()] += ret['lcores']
     for f in ret['followers']:
-        follower = f['fkey'].split('_', 1)[0]
+        follower = unkey(f['fkey'])[0]
         cores = f['cores']
         sums[follower] += cores
     return sums
