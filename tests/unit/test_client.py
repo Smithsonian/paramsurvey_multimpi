@@ -72,7 +72,7 @@ def test_machinefile_openmpi():
     assert machinesfile == me+' slots=3\n'
     with pytest.raises(ValueError):
         machinesfile = client.machinefile_openmpi({}, ret, 4, user_kwargs)
-        assert machinesfile == me+' slots=3\n', 'XXX should fail for too few cores'
+        assert machinesfile == me+' slots=3\n', 'too few cores raises'
 
     ret = {'lcores': 3,
            'followers': [
@@ -81,6 +81,14 @@ def test_machinefile_openmpi():
            ]}
     machinesfile = client.machinefile_openmpi({}, ret, 9, {'mpi': 'openmpi'})
     assert machinesfile == me+' slots=3\nfoo slots=6\n'
+
+    ret = {'lcores': 3,
+           'followers': [
+               {'fkey': 'foo1_1', 'cores': 3},
+               {'fkey': 'foo2_2', 'cores': 3},
+           ]}
+    machinesfile = client.machinefile_openmpi({}, ret, 9, {'mpi': 'openmpi'})
+    assert machinesfile == me+' slots=3\nfoo1 slots=3\nfoo2 slots=3\n'
 
 
 def test_openmpi_DiFX_machinefile(fs):  # pyfakefs

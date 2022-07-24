@@ -16,6 +16,8 @@ def test_onlyleader():
     assert len(ret['followers']) == 0, 'leader has enough cores, schedules immediately'
     assert ret['state'] == 'running'
     assert ret['lcores'] == 1
+    assert 'jobnumber' in ret
+    assert ret['jobnumber'] is not None
 
     seq += 1
     l = partial(leader_checkin, 'localhost', 1, 100, 2, 'pubkey')
@@ -45,6 +47,8 @@ def test_leadfollow():
     assert not ret, 'leadfollow leader must check in before scheduled'
     ret = l('waiting', lseq)
     assert len(ret['followers']) != 0, 'leadfollow leader should schedule'
+    assert 'jobnumber' in ret
+    assert ret['jobnumber'] is not None
     ret = f('available', fseq)
     assert ret, 'follower is scheduled'
     assert 'leader' in ret, 'leadfollow follower receives schedule'
@@ -60,6 +64,8 @@ def test_leadfollow():
     assert not ret
     ret = l('waiting', lseq)
     assert ret['followers'], 'leader sees job has scheduled'
+    assert 'jobnumber' in ret
+    assert ret['jobnumber'] is not None
     ret = f('available', fseq)
     assert ret, 'follower sees job has scheduled'
     assert 'leader' in ret

@@ -145,7 +145,7 @@ def make_leader_return(l):
     ret = []
     for f in l['fkeys']:
         ret.append({'fkey': f, 'cores': followers[f]['cores']})
-    return {'followers': ret, 'state': l['state'], 'lcores': l['cores']}
+    return {'followers': ret, 'state': l['state'], 'lcores': l['cores'], 'jobnumber': l['jobnumber']}
 
 
 def key(ip, pid):
