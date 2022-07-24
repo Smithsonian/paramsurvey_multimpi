@@ -21,17 +21,29 @@ helper_server_proc = None
 
 
 def get_pubkey():
-    with open(os.path.expanduser('~/.ssh/id_rsa.pub')) as f:
+    pub = os.path.expanduser('~/.ssh/id_rsa.pub')
+    if not os.path.isfile(pub):
+        print('No public key found (.ssh/id_rsa.pub), assuming empty is ok', file=sys.stderr)
+        return ''
+    with open(pub) as f:
         return f.read()
 
 
 def deploy_pubkey(pubkey):
+    if pubkey == '':
+        # this happens in the CI
+        return
+
     keyfile = os.path.expanduser('~/.ssh/authorized_keys')
     if os.path.exists(keyfile):
         with open(keyfile) as f:
             existing = f.read()
         if pubkey in existing:
             return
+
+    keydir = os.path.dirname(keyfile)
+    if not os.path.isdir(keydir):
+        raise FileNotFoundError('~/.ssh does not exist')
 
     with open(keyfile, 'a') as f:
         f.write(pubkey)
@@ -161,9 +173,20 @@ def leader(pset, system_kwargs, user_kwargs):
             #print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
             #os.system('ps')
             if status is not None:
-                #print('driver: leader {} observes normal exit'.format(os.getpid()))
                 state = 'exiting'
-                completed = finish_mpi(mpi_proc)  # should complete immediately
+
+                try:
+                    completed = finish_mpi(mpi_proc)  # should complete immediately
+                except ValueError as e:
+                    # ValueError("Invalid file object: <_io.TextIOWrapper name=6 encoding='utf-8'>",)
+                    # https://github.com/python/cpython/issues/79363 -- claims mpirun is closing stdout or stderr a while before exiting?!
+                    # fix backported to 3.7 -- I only see it in 3.6
+                    print('driver: leader {} observes normal mpirun exit, status {}'.format(os.getpid(), status), file=sys.stderr)
+                    sys.stderr.flush()
+                    if 'Invalid file object' not in str(e):
+                        raise
+                    completed = subprocess.CompletedProcess(args=None, returncode=status, stdout='', stderr='')
+
                 for _ in range(100):
                     ret = leader_checkin(ncores, wanted, pubkey, state, lseq)
                     #print('driver: leader {} checkin post-normal exit returned'.format(os.getpid()), ret)
