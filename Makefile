@@ -1,4 +1,4 @@
-.PHONY: unit unit_coverage integration integration_coverage clean_coverage test test_coverage check_action distclean dist
+.PHONY: unit unit_coverage ubuntu integration integration_coverage clean_coverage test test_covereage check_action distclean dist
 
 COV=--cov-append --cov-branch --cov paramsurvey_multimpi
 
@@ -8,6 +8,9 @@ unit:
 
 unit_coverage:
 	PYTHONPATH=. pytest ${COV} -v -v ${PYTEST_STDERR_VISIBLE} tests/unit
+
+ubuntu:
+	sudo apt-get install -y openmpi-bin libopenmpi-dev
 
 integration:
 	# hint: PYTEST_STDERR_VISIBLE=-s

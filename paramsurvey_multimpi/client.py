@@ -6,13 +6,16 @@ import time
 import signal
 import sys
 import functools
+import tempfile
+from collections import defaultdict
+import shutil
 
 import requests
 
 import paramsurvey_multimpi
 
 
-url = None
+url = "http://localhost:8889/jsonrpc"
 timeout = (4, 1)  # connect, read
 sigint_count = 0
 leader_exceptions = []
@@ -106,6 +109,125 @@ def hello_world():
     except Exception as e:
         return 'hello_world fail: '+str(e)
     return 'pass'
+
+
+def unique_resources(ret):
+    sums = defaultdict(int)
+    sums[socket.gethostname()] += ret['lcores']
+    for f in ret['followers']:
+        follower = f['fkey'].split('_', 1)[0]
+        cores = f['cores']
+        sums[follower] += cores
+    return sums
+
+
+def machinefile_openmp_DiFX(user_kwargs, sums):
+    # DiFX is a little unique:
+    # Rank 0 is the manager
+    # Ranks 1-N are the N datastreams.
+    # In a cluster these are Mark6 units. In the cloud these should be separate nodes.
+    # The rest of the ranks are "Core" objects, which are multi-threaded
+    # The number of threads for Core objects is recorded in the threads file
+
+    # openmpi does not allow repeats in the machinefile, so we do not use slots= syntax
+
+    machinefile = ''
+
+    leader = socket.gethostname()  # can't use localhost, openmpi will turn that into this hostname
+    machinefile += leader + '\n'
+    sums[leader] -= 1
+    print('GREG: leader:', leader)
+
+    datastreams = user_kwargs['DiFX_datastreams']
+
+    nodelist = list(sums.keys())
+    while len(nodelist) < datastreams:
+        # more datastreams than nodes, lengthen the list
+        nodelist += nodelist
+    nodelist += nodelist  # add extra in case some nodes have all cores used
+    print('GREG using nodelist', nodelist)
+
+    # allocate datastreams, iterating over eligible nodes
+    ds_count = 0
+    while ds_count < datastreams:
+        try:
+            ds = nodelist.pop(0)
+        except IndexError:
+            raise ValueError('too few cores to configure datastreams')
+        if sums[ds] > 0:
+            print('GREG: datastream:', ds)
+            machinefile += ds + '\n'
+            sums[ds] -= 1
+            ds_count += 1
+
+    # allocate compute nodes, running one MPI process per node
+    threadfile = ''
+    for f in sums:
+        if sums[f] > 0:
+            machinefile += f + '\n'
+            threadfile += str(sums[f]) + '\n'
+            print('GREG: Core:', f, 'with threads', sums[f])
+
+    return machinefile, threadfile
+
+
+def machinefile_openmp_DiFX_file(user_kwargs, sums):
+    machinefile, threadfile = machinefile_openmp_DiFX(user_kwargs, sums)
+    difx_job = user_kwargs['DiFX_jobname']
+
+    with open(difx_job + '.machines', 'w') as mf:
+        mf.write(machinefile)
+        mf.close()
+
+    with open(difx_job + '.threads', 'w') as tf:
+        tf.write(threadfile)
+        tf.close()
+
+    return ''
+
+
+def machinefile_openmpi(pset, ret, wanted, user_kwargs):
+    # openmpi: host1 slots=2
+
+    machinefile = ''
+    sums = unique_resources(ret)
+
+    if user_kwargs.get('machinefile') == 'DiFX':
+        return machinefile_openmp_DiFX_file(user_kwargs, sums)
+
+    for f in sums:
+        wanted -= sums[f]
+        machinefile += '{} slots={}\n'.format(f, sums[f])
+
+    if wanted > 0:
+        raise ValueError('too few cores')
+
+    return machinefile
+
+
+def machinefile_mpich(pset, ret, wanted, user_kwargs):
+    # mpich: host1:2
+    pass
+
+
+def do_google_mount(bucket, directory):
+    os.makedirs(directory, exist_ok=True)
+    if not os.path.isdir(directory):
+        raise ValueError('mount point '+directory+' is not a directory')
+    # todo: mountpoint is empty?
+
+    exe = shutil.which('gcsfuse')
+    if not exe:
+        raise ValueError('cannot find gcsfuse comand in the PATH')
+
+    try:
+        ret = subprocess.call('gcsfuse --implicit-dirs {} {}'.format(bucket, directory))
+        if ret < 0:
+            raise ValueError('gcsfuse terminated by signal '+int(-ret))
+        elif ret > 0:
+            raise ValueError('gcsfuse returned '+int(ret))
+    except OSError as e:
+        raise ValueError('gcsfuse failed: '+e)
 
 
 def leader_start_mpi(pset, ret, wanted, user_kwargs):
