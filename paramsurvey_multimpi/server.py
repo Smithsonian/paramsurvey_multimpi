@@ -13,8 +13,6 @@ import aiohttp_rpc
 import psutil
 
 exiting = False
-# XXX pdeathsig -- set exiting -- see existing SIGHUP code
-# XXX make exiting actually exit this process
 
 leaders = defaultdict(dict)
 followers = defaultdict(dict)
@@ -40,29 +38,34 @@ def clear():
 
 def cache_timeout():
     now = time.time()
-    kills = []
+
+    timeouts = []
     for k, v in followers.items():
         if v['t'] < now - cache_lifetime:
-            kills.append(k)
-    if kills:
-        #print('cache: timing out {} followers entries'.format(len(kills)))
+            timeouts.append(k)
+    if timeouts:
+        #print('cache: timing out {} followers entries'.format(len(timeouts)))
         pass
-    for k in kills:
-        # XXX if follower was 'assigned', not 'running' or 'available', set up for a reschedule
-        # we expect running followers to never check in again
-        del followers[k]
+    for fkey in timeouts:
+        # followers have no idea when thei mpi job is done
+        # once running it'll remain running (and checking in) until we tell it to exit
+        # if it does stop checking in, we can't really do anything except hope mpi exits
+        if 'jobnumber' in followers[fkey]:
+            print('follower in job {} timed out, that is a bad sign'.format(followers[fkey]['jobnumber']))
+        del followers[fkey]
 
-    kills = []
+    timeouts = []
     for k, v in leaders.items():
         if v['t'] < now - cache_lifetime:
-            kills.append(k)
-    if kills:
-        #print('cache: timing out {} leaders entries'.format(len(kills)))
+            timeouts.append(k)
+    if timeouts:
+        #print('cache: timing out {} leaders entries'.format(len(timeouts)))
         pass
-    for k in kills:
-        # XXX maybe do something if waiting, scheduled, but not running?
-        # we expect running leaders to never check in
-        del leaders[k]
+    for lkey in timeouts:
+        state = leaders[lkey].get('state')
+        jobnumber = leaders[lkey].get('jobnumber')
+        print('leader {} in state {} jobnumber {} timed out'.format(lkey, state, jobnumber))
+        del leaders[lkey]
 
 
 def cache_clean_exiting():
@@ -122,7 +125,7 @@ def schedule(lkey, l):
             followers[f]['state'] = 'assigned'
             followers[f]['leader'] = lkey
             followers[f]['pubkey'] = l['pubkey']
-            followers[f]['jobnumber'] = jobnumber  # overwritten for is_reschedule
+            followers[f]['jobnumber'] = jobnumber  # overwritten with the old number for is_reschedule
         if is_reschedule:
             l['fkeys'].extend(fkeys)
             for f in fkeys:
@@ -196,7 +199,7 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
             #print('  new state is', state)
             pass
 
-    try_to_schedule = False
+    try_to_schedule = ''
     if state in {'scheduled', 'running'}:
         #print('  leader is already scheduled')
         valid_fkeys = []
@@ -218,14 +221,18 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
             #print('  not all followers still exist, so triggering a new schedule')
             #print('    old valid fkeys:', l['fkeys'])
             #print('    new valid fkeys:', valid_fkeys)
-            try_to_schedule = True
+            try_to_schedule = 'a running follower disappeared'
+            # XXX I don't think this is validly handled
+            # if the leader is scheduled we can safely change the fkeys via reschedule
+            # if the leader is running mpi it's too late, mpi will use the list it was given and error out if something's bad
             l['fkeys'] = valid_fkeys
         else:
             if state == 'running':
                 pass
-            elif all([followers[f]['state'] == 'running' for f in valid_fkeys]):
-                #print('GREG GREG GREG leader is running')
-                l['state'] = 'running'
+            elif state == 'scheduled':
+                if all([followers[f]['state'] == 'running' for f in valid_fkeys]):
+                    print('server: job number {} has reached the running state'.format(l['jobnumber']))
+                    l['state'] = 'running'
     else:
         # if state is None, this is a new-to-us leader
         # if it's waiting, we overwrite with identical information
