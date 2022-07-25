@@ -291,10 +291,15 @@ def leader(pset, system_kwargs, user_kwargs):
             continue
         if ret['state'] == 'exiting':
             # XXX consolidate with the duplicate code below
-            mpi_proc.send_signal(signal.SIGINT)
-            completed = finish_mpi(mpi_proc)
-            status = check_mpi(mpi_proc)
             #print('driver: leader {}: received surprising exiting status'.format(os.getpid()))
+            if mpi_proc:
+                mpi_proc.send_signal(signal.SIGINT)
+                completed = finish_mpi(mpi_proc)
+                status = check_mpi(mpi_proc)
+            else:
+                print('leader: Surprised to reach an exiting state and yet no mpi_proc')
+                status = 0  # ??? XXX
+                completed = subprocess.CompletedProcess(args=None, returncode=status, stdout='', stderr='')
             sys.stdout.flush()
             return {'cli': completed}
 
@@ -317,9 +322,9 @@ def leader(pset, system_kwargs, user_kwargs):
 
         if mpi_proc:
             status = check_mpi(mpi_proc)
-            #print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
             #os.system('ps')
             if status is not None:
+                print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
                 state = 'exiting'
 
                 try:
