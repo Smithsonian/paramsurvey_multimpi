@@ -15,9 +15,12 @@ def main():
     parser.add_argument('--ray', action='store_true')
     args = parser.parse_args()
 
-    client.start_multimpi_server(hostport='localhost:8889')
+    #client.start_multimpi_server(hostport='localhost:8889')
+    foo = client.start_multimpi_server(hostport=':8889')
     #client.start_multimpi_server(hostport='0.0.0.0:8889')
     #client.start_multimpi_server()
+    server_url = foo['multimpi_server_url']
+    print('GREG: server_url is', server_url)
 
     if args.ray:
         kwargs = {
@@ -50,6 +53,8 @@ def main():
         'stderr': subprocess.PIPE, 'encoding': 'utf-8',
     }}
     user_kwargs = {}
+    user_kwargs['mpi'] = 'openmpi'
+    user_kwargs['multimpi_server_url'] = server_url
 
     results = paramsurvey.map(client.multimpi_worker, psets, user_kwargs=user_kwargs)
 
