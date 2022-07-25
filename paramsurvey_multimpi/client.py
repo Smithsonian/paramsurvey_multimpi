@@ -324,7 +324,7 @@ def leader(pset, system_kwargs, user_kwargs):
             status = check_mpi(mpi_proc)
             #os.system('ps')
             if status is not None:
-                print('driver: leader {} checking mpirun: '.format(os.getpid()), status)
+                print('driver: leader {} checking mpirun:'.format(os.getpid()), status)
                 state = 'exiting'
 
                 try:
@@ -345,6 +345,7 @@ def leader(pset, system_kwargs, user_kwargs):
                     if ret['result'] and ret['result']['state'] == 'exiting':
                         break
                     time.sleep(0.1)
+                sys.stdout.flush()
                 return {'cli': completed}
 
         if not mpi_proc:
@@ -382,6 +383,7 @@ def follower(pset, system_kwargs, user_kwargs):
 
     # for pandas type reasons, if cli is an object for the leader, it has to be an object for the follower
     # elsewise pandas will make the column a float
+    sys.stdout.flush()
     return {'cli': 'hi pandas'}
 
 
