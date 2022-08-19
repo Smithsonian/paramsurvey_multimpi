@@ -342,7 +342,8 @@ def leader(pset, system_kwargs, user_kwargs):
                 for _ in range(100):
                     ret = leader_checkin(ncores, wanted, pubkey, state, lseq)
                     #print('driver: leader {} checkin post-normal exit returned'.format(os.getpid()), ret)
-                    if ret['result'] and ret['result']['state'] == 'exiting':
+                    ret = ret.get('result')
+                    if ret and ret['state'] == 'exiting':
                         break
                     time.sleep(0.1)
                 sys.stdout.flush()
