@@ -24,6 +24,10 @@ follower_exceptions = []
 helper_server_proc = None
 
 
+def initial_seq():
+    return int('{}'.format(time.time())[-5:-1])
+
+
 def get_pubkey():
     pub = os.path.expanduser('~/.ssh/id_rsa.pub')
     if not os.path.isfile(pub):
@@ -273,7 +277,7 @@ def leader(pset, system_kwargs, user_kwargs):
     mpi_proc = None
     ncores = pset['ncores']
 
-    lseq = 0
+    lseq = initial_seq()
     state = 'waiting'
     wanted = pset['wanted']
 
@@ -301,7 +305,7 @@ def leader(pset, system_kwargs, user_kwargs):
                 status = 0  # ??? XXX
                 completed = subprocess.CompletedProcess(args=None, returncode=status, stdout='', stderr='')
             sys.stdout.flush()
-            return {'cli': completed, 'node': socket.gethostname()}
+            return {'cli': completed, 'node': socket.gethostname() + '_' + str(os.getpid()) + '_' + str(lseq)}
 
         if ret['state'] == 'running':
             if state == 'running':
@@ -318,7 +322,7 @@ def leader(pset, system_kwargs, user_kwargs):
             status = check_mpi(mpi_proc)
             #print('driver: leader {} bailing out on state==waiting post mpi_proc'.format(os.getpid()))
             sys.stdout.flush()
-            return {'cli': completed, 'node': socket.gethostname()}
+            return {'cli': completed, 'node': socket.gethostname() + '_' + str(os.getpid()) + '_' + str(lseq)}
 
         if mpi_proc:
             status = check_mpi(mpi_proc)
@@ -347,7 +351,7 @@ def leader(pset, system_kwargs, user_kwargs):
                         break
                     time.sleep(0.1)
                 sys.stdout.flush()
-                return {'cli': completed, 'node': socket.gethostname()}
+                return {'cli': completed, 'node': socket.gethostname() + '_' + str(os.getpid()) + '_' + str(lseq)}
 
         if not mpi_proc:
             time.sleep(0.1)
@@ -357,7 +361,7 @@ def leader(pset, system_kwargs, user_kwargs):
 
 def follower(pset, system_kwargs, user_kwargs):
     #print('I am follower and my pid is {}'.format(os.getpid()))
-    fseq = 0
+    fseq = initial_seq()
     state = 'available'
     ncores = pset['ncores']
 
@@ -385,7 +389,7 @@ def follower(pset, system_kwargs, user_kwargs):
     # for pandas type reasons, if cli is an object for the leader, it has to be an object for the follower
     # elsewise pandas will make the column a float
     sys.stdout.flush()
-    return {'cli': 'hi pandas', 'node': socket.gethostname()}
+    return {'cli': 'hi pandas', 'node': socket.gethostname() + '_' + str(os.getpid()) + '_' + str(fseq)}
 
 
 def multimpi_worker(pset, system_kwargs, user_kwargs):
