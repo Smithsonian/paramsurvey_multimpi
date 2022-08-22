@@ -301,7 +301,7 @@ def leader(pset, system_kwargs, user_kwargs):
                 status = 0  # ??? XXX
                 completed = subprocess.CompletedProcess(args=None, returncode=status, stdout='', stderr='')
             sys.stdout.flush()
-            return {'cli': completed}
+            return {'cli': completed, 'node': socket.gethostname()}
 
         if ret['state'] == 'running':
             if state == 'running':
@@ -318,7 +318,7 @@ def leader(pset, system_kwargs, user_kwargs):
             status = check_mpi(mpi_proc)
             #print('driver: leader {} bailing out on state==waiting post mpi_proc'.format(os.getpid()))
             sys.stdout.flush()
-            return {'cli': completed}
+            return {'cli': completed, 'node': socket.gethostname()}
 
         if mpi_proc:
             status = check_mpi(mpi_proc)
@@ -347,7 +347,7 @@ def leader(pset, system_kwargs, user_kwargs):
                         break
                     time.sleep(0.1)
                 sys.stdout.flush()
-                return {'cli': completed}
+                return {'cli': completed, 'node': socket.gethostname()}
 
         if not mpi_proc:
             time.sleep(0.1)
@@ -385,7 +385,7 @@ def follower(pset, system_kwargs, user_kwargs):
     # for pandas type reasons, if cli is an object for the leader, it has to be an object for the follower
     # elsewise pandas will make the column a float
     sys.stdout.flush()
-    return {'cli': 'hi pandas'}
+    return {'cli': 'hi pandas', 'node': socket.gethostname()}
 
 
 def multimpi_worker(pset, system_kwargs, user_kwargs):
