@@ -198,8 +198,11 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
     l = leaders[lkey]  # defaultdict dict
 
     if l.get('lseq') != lseq_new:
-        print('leader {} checked in with new sequence number, destroying old leader in state {}'.format(lkey, l.get('state')))
-        if l.get('state') in {'scheduled', 'running'}:
+        if len(l):
+            print('leader {} checked in with new sequence number, destroying old leader in state {}'.format(lkey, l.get('state')))
+            if l.get('state') in {'scheduled', 'running'}:
+                # XXX potentially free up all of the followers?
+                pass
             l.clear()
 
     l['t'] = time.time()
@@ -321,10 +324,11 @@ def follower_checkin(ip, cores, pid, remotestate, fseq_new):
 
     f = followers[k]  # defaultdict dict
     if f.get('fseq') != fseq_new:
-        print('follower {} checked in with new sequence number, destroying old follower in state {}'.format(k, f.get('state')))
-        f.clear()
+        if len(f):
+            print('follower {} checked in with new sequence number, destroying old follower in state {}'.format(k, f.get('state')))
+            f.clear()
 
-        f['t'] = time.time()
+    f['t'] = time.time()
     f['fseq'] = fseq_new
     state = f.get('state')
 
