@@ -195,11 +195,18 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
         #print('leader checkin used key of an existing follower')
         del followers[lkey]
 
-    l = leaders[lkey]
+    l = leaders[lkey]  # defaultdict dict
+
+    if l.get('lseq') != lseq_new:
+        print('leader {} checked in with new sequence number, destroying old leader in state {}'.format(lkey, l.get('state')))
+        if l.get('state') in {'scheduled', 'running'}:
+            l.clear()
+
     l['t'] = time.time()
     state = l.get('state')
 
     if state == 'exiting':
+        # XXX shouldn't do this if sequence numbers do not match
         return {'followers': None, 'state': 'exiting'}
 
     if remotestate == 'exiting':
@@ -213,21 +220,6 @@ def leader_checkin(ip, cores, pid, wanted_cores, pubkey, remotestate, lseq_new):
             print('server surprised to see leader {} state {} announce remotestate exiting'.format(lkey, state))
             l['state'] = 'exiting'
         return {'followers': None, 'state': 'exiting'}
-
-    if l.get('lseq') != lseq_new:
-        #print('  leader sequence different, old: {}, new: {}, old-state: {}'.format(l.get('lseq'), lseq_new, state))
-        # this leader is not the same one as in the table...
-        if state == 'scheduled' or state == 'running':
-            #print('  changing state from {} to None'.format(state))
-            state = None
-            # this job must have finished, one way or another
-            # just throw this info away, followers will check back in for new work anyway
-            if 'fkeys' in l:
-                del l['fkeys']
-        elif 'lseq' in l:
-            # don't print this if the leader is brand new
-            #print('  new state is', state)
-            pass
 
     try_to_schedule = ''
     if state in {'scheduled', 'running'}:
@@ -328,22 +320,16 @@ def follower_checkin(ip, cores, pid, remotestate, fseq_new):
         del leaders[k]
 
     f = followers[k]  # defaultdict dict
-    f['t'] = time.time()
+    if f.get('fseq') != fseq_new:
+        print('follower {} checked in with new sequence number, destroying old follower in state {}'.format(k, f.get('state')))
+        f.clear()
+
+        f['t'] = time.time()
+    f['fseq'] = fseq_new
     state = f.get('state')
 
     if state == 'exiting':
         return {'state': 'exiting'}
-
-    if f.get('fseq') != fseq_new:
-        #print('  follower sequence different old: {} new: {}  old-state: {}'.format(f.get('fseq'), fseq_new, state))
-        if state == 'assigned':
-            #print('  setting state to None')
-            state = None
-        elif 'fseq' in f:  # don't print this if the follower is brand new
-            #print('  keeping state', state)
-            pass
-
-    f['fseq'] = fseq_new
 
     if remotestate == 'assigned':
         #print('  GREG remotestate assigned, state is', state)
