@@ -25,7 +25,8 @@ helper_server_proc = None
 
 
 def initial_seq():
-    return int('{}'.format(time.time())[-5:-1])
+    seq = '{}'.format(time.time())[-5:-1].replace('.', '')
+    return int(seq)
 
 
 def get_pubkey():
