@@ -52,7 +52,7 @@ def cache_timeout():
         # followers have no idea when thei mpi job is done
         # once running it'll remain running (and checking in) until we tell it to exit
         # if it does stop checking in, we can't really do anything except hope mpi exits
-        if 'jobnumber' in followers[fkey]:
+        if 'jobnumber' in followers[fkey] and followers[fkey].get('state') != 'exiting':
             print('server: follower {} in job {} timed out, that is a bad sign'.format(fkey, followers[fkey]['jobnumber']))
         del followers[fkey]
 
