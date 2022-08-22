@@ -417,7 +417,9 @@ def mysignal(helper_server_proc, signum, frame):
             print('driver: additional sigint ignored', file=sys.stderr)
 
 
-def start_multimpi_server(hostport=':8889', user_kwargs={}):
+def start_multimpi_server(hostport=':8889', user_kwargs=None):
+    if user_kwargs is None:
+        raise ValueError('must pass user_kwargs as a dict')
     if ':' not in hostport:
         hostport = hostport + ':8889'
     host, port = hostport.split(':', maxsplit=1)
@@ -453,7 +455,7 @@ def start_multimpi_server(hostport=':8889', user_kwargs={}):
     mysignal_ = functools.partial(mysignal, helper_server_proc)
     signal.signal(signal.SIGINT, mysignal_)
 
-    return user_kwargs
+    return helper_server_proc
 
 
 def tear_down_multimpi_server(helper_server_proc):

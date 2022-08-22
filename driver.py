@@ -15,12 +15,8 @@ def main():
     parser.add_argument('--ray', action='store_true')
     args = parser.parse_args()
 
-    #client.start_multimpi_server(hostport='localhost:8889')
-    foo = client.start_multimpi_server(hostport=':8889')
-    #client.start_multimpi_server(hostport='0.0.0.0:8889')
-    #client.start_multimpi_server()
-    server_url = foo['multimpi_server_url']
-    print('GREG: server_url is', server_url)
+    user_kwargs = {}
+    client.start_multimpi_server(hostport=':8889', user_kwargs=user_kwargs)
 
     if args.ray:
         kwargs = {
@@ -48,13 +44,12 @@ def main():
             p['ray'] = {'num_cores': p.get('ncores')}
 
     # example of how to return stdout from the cli process
-    user_kwargs = {'run_kwargs': {
+    run_kwargs = {
         'stdout': subprocess.PIPE, 'encoding': 'utf-8',
         'stderr': subprocess.PIPE, 'encoding': 'utf-8',
-    }}
-    user_kwargs = {}
+    }
+    user_kwargs['run_kwargs'] = run_kwargs
     user_kwargs['mpi'] = 'openmpi'
-    user_kwargs['multimpi_server_url'] = server_url
 
     results = paramsurvey.map(client.multimpi_worker, psets, user_kwargs=user_kwargs)
 

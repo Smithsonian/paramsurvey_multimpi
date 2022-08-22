@@ -3,6 +3,7 @@ import os
 import os.path
 from io import StringIO
 import sys
+import signal
 
 import pytest
 
@@ -48,13 +49,16 @@ def test_generic():
         },
     }
 
-
     name = os.environ['TEST_GENERIC']
     if name not in tests:
         raise ValueError('unknown test name {}, options are: {}'.format(name, list(tests.keys())))
     tests = tests[name]
 
-    user_kwargs = client.start_multimpi_server(hostport='localhost:8889')
+    with pytest.raises(ValueError):
+        client.start_multimpi_server(hostport='localhost:8889')
+
+    user_kwargs = {}
+    proc = client.start_multimpi_server(hostport='localhost:8889', user_kwargs=user_kwargs)
     user_kwargs['mpi'] = 'openmpi'
 
     pslogger_fd = StringIO()
@@ -142,3 +146,25 @@ def test_generic():
             assert r.cli.returncode == returncode
 
     print(pslogger_fd.getvalue(), file=sys.stderr)
+    proc.send_signal(signal.SIGHUP)
+    try:
+        proc.communicate(timeout=5.0)
+    except subprocess.TimeoutExpired:
+        assert False, 'server process did not exit after 1 SIGHUP'
+
+
+def test_signals():
+    proc = client.start_multimpi_server(hostport='localhost:8889', user_kwargs={})
+
+    # 1-2 ^C does not make it exit
+    proc.send_signal(signal.SIGHUP)
+    assert proc.poll() is None, 'server does not exit after 1 SIGINT'
+    proc.send_signal(signal.SIGHUP)
+    assert proc.poll() is None, 'server does not exit after 2 SIGINT'
+
+    # 1 HUP does make it exit
+    proc.send_signal(signal.SIGHUP)
+    try:
+        proc.communicate(timeout=5.0)
+    except subprocess.TimeoutExpired:
+        assert False, 'server process did not exit after 1 SIGHUP'

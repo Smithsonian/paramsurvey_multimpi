@@ -20,6 +20,8 @@ cache_lifetime = 30  # should be several times as long as the follower checkin t
 
 jobnumber = 0  # used to disambiguate states
 
+sigint_count = 0
+
 
 def set_pdeathsig():
     libc = ctypes.CDLL(ctypes.util.find_library('c'), use_errno=True)
@@ -393,6 +395,15 @@ def mysignal(signum, frame):
                 #print('multimpi server: {} leaders and {} followers remain'.format(len(leaders), len(followers)), file=sys.stderr)
                 return
         exit(0)
+    elif signum == signal.SIGHUP:
+        global sigint_count
+        sigint_count += 1
+        # the process that starts us tears down on the 2nd ^C
+        # we are in the same process group, so we get them too.
+        if sigint_count > 2:
+            print('server: tearing down for ^C', file=sys.stderr)
+            sys.exit(1)
+        pass
     else:
         #print('multimpi server: surprised to receive signal', signum, file=sys.stderr)
         pass
@@ -400,6 +411,7 @@ def mysignal(signum, frame):
 
 if __name__ == '__main__':
     signal.signal(signal.SIGHUP, mysignal)
+    signal.signal(signal.SIGINT, mysignal)
     set_pdeathsig()
 
     aiohttp_rpc.rpc_server.add_methods([
